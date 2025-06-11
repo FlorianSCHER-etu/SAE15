@@ -3,7 +3,6 @@ from md_to_html import convert
 import json
 import sys
 import os
-import re
 
 
 def request_data(url: str, limit: int=0, offset: int=0) -> dict:
@@ -34,7 +33,7 @@ def request_cached_data(url: str, filename: str, limit: int=0, offset: int=0, ve
     if os.path.isfile(f'cache/{filename}'):
         # Si le cache est présent on charge les données
         if verbose == True:
-            print(f"(*) Récupération du cache : {filename}")
+            print(f"Récupération du cache : {filename}")
         with open(f'cache/{filename}', "r") as f:
             file_content = json.load(f)
         return file_content
@@ -42,7 +41,7 @@ def request_cached_data(url: str, filename: str, limit: int=0, offset: int=0, ve
     elif not os.path.isfile(f'cache/{filename}'):
         # Si le cache n'existe pas on le crée
         if verbose == True:
-            print(f"(+) Création du cache : {filename}")
+            print(f"Création du cache : {filename}")
         data = request_data(url, limit, offset)
         with open(f'cache/{filename}', "w") as f:
             file_content = json.dump(data, f)
@@ -161,8 +160,8 @@ def get_poke_dict(data: dict) -> dict:
 
     # Taille et poids :
 
-    poke_dict['POKEDEX']['height'] = data['height'] / 10       # Divisé par 10 car affiché en décimètres
-    poke_dict['POKEDEX']['weight'] = data['weight'] / 10       # Divisé par 10 car affiché en décigrammes
+    poke_dict['POKEDEX']['height'] = data['height'] / 100       # Divisé par 100 car affiché en décimètres
+    poke_dict['POKEDEX']['weight'] = data['weight'] / 100       # Divisé par 100 car affiché en décigrammes
 
     # Stats de base et calcul total (somme) :
 
@@ -258,7 +257,7 @@ def poke_to_md(poke_dict: dict, filename: str) -> None:
         md.write('\n## Autres informations :\n\n')
         md.write(f'- Habitat : {poke_dict['OTHER']['habitat'].capitalize()}\n')
         md.write(f'- Indice de capture *(0-255)* : {poke_dict['OTHER']['capt_rate']}\n')
-        md.write(f'- Bonheur *(0-255)*: {poke_dict['OTHER']['happiness']}\n\n')
+        md.write(f'- Indice de Joie *(0-255)*: {poke_dict['OTHER']['happiness']}\n\n')
 
 def fiche_pokemon(id: int) -> None:
     """
@@ -287,7 +286,7 @@ def fiche_pokemon(id: int) -> None:
         print(f"❌ Erreur : permission non accordée. Ne peut pas créer le dossier pokefiche.")
 
     root_pkmn_file = request_cached_data("https://pokeapi.co/api/v2/pokemon", "root_pkmn.json", 9999, verbose=verbose_value)   # Récupération du fichier contenant tous les Pokémons
-    print("> Génération de la Pokéfiche en cours...")
+    print("Génération de la Pokéfiche en cours...")
 
     pkmn_name = root_pkmn_file['results'][id-1]['name']
     data = download_poke(id, f"{pkmn_name}.json")       # Récupération des données de base sur le Pokémon
@@ -315,37 +314,34 @@ if __name__ == "__main__":
     print("---------------------- SAE 15 [2.2]")
     print("////////////////////// Côme et Florian\n")
 
-    print('▶ Utilisation : python3 pokefiche.py --verbose=[y|n] <pokemon_id>\n')
+    print('Utilisation : python3 pokefiche.py --verbose=[y|n] <pokemon_id>\n')
 
-    expression = ' '.join(sys.argv)
-    
-    if re.search(r"^pokefiche.py\s--verbose=(y|n)\s[0-9]+", expression):
-        if "--verbose=y" == sys.argv[1]:
-            verbose_value = True
-            try:
-                fiche_pokemon(int(sys.argv[2]))
-            except requests.exceptions.ConnectionError:
-                print("❌ Connexion refusée.\n")
-            except requests.exceptions.HTTPError:
-                print("❌ La requête est invalide.\n")
-            except requests.exceptions.Timeout:
-                print("❌ La requête a expiré.\n")
-            except json.decoder.JSONDecodeError:
-                print("❌ Une erreur est survenue.\n")
-                print("> Essayez de vider le cache\n")
+    if "--verbose=y" == sys.argv[1]:
+        verbose_value = True
+        try:
+            fiche_pokemon(int(sys.argv[2]))
+        except requests.exceptions.ConnectionError:
+            print("❌ Connexion refusée.\n")
+        except requests.exceptions.HTTPError:
+            print("❌ La requête est invalide.\n")
+        except requests.exceptions.Timeout:
+            print("❌ La requête a expiré.\n")
+        except json.decoder.JSONDecodeError:
+            print("❌ Une erreur est survenue.\n")
+            print("> Essayez de vider le cache\n")
 
-        elif "--verbose=n" == sys.argv[1]:
-            verbose_value = False
-            try:
-                fiche_pokemon(int(sys.argv[2]))
-            except requests.exceptions.ConnectionError:
-                print("❌ Connexion refusée.\n")
-            except requests.exceptions.HTTPError:
-                print("❌ La requête est invalide.\n")
-            except requests.exceptions.Timeout:
-                print("❌ La requête a expiré.\n")
-            except json.decoder.JSONDecodeError:
-                print("❌ Une erreur est survenue.\n")
-                print("> Essayez de vider le cache\n")
+    elif "--verbose=n" == sys.argv[1]:
+        verbose_value = False
+        try:
+            fiche_pokemon(int(sys.argv[2]))
+        except requests.exceptions.ConnectionError:
+            print("❌ Connexion refusée.\n")
+        except requests.exceptions.HTTPError:
+            print("❌ La requête est invalide.\n")
+        except requests.exceptions.Timeout:
+            print("❌ La requête a expiré.\n")
+        except json.decoder.JSONDecodeError:
+            print("❌ Une erreur est survenue.\n")
+            print("> Essayez de vider le cache\n")
     else:
-        print(f'❌ Erreur : argument inattendu\n')
+        print(f'❌ Erreur : argument inattendu\n\nUtilisation : python3 pokefiche.py --verbose=[y|n] <pokemon_id>\n')
